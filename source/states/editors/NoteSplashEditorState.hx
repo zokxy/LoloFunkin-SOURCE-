@@ -592,6 +592,8 @@ class NoteSplashEditorState extends MusicBeatState
         {
             if (controls.BACK)
                 MusicBeatState.switchState(new MasterEditorMenu());
+                FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+                FlxG.sound.music.time = 14000;
             if (FlxG.keys.justPressed.F1)
                 openSubState(new NoteSplashEditorHelpSubState());
         }

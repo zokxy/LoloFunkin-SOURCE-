@@ -47,7 +47,7 @@ class MusicBeatSubstate extends FlxSubState
 					rollbackSection();
 			}
 		}
-
+		MusicBeatState.checkMenuMusicLoop();
 		super.update(elapsed);
 	}
 

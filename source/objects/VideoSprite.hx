@@ -10,6 +10,7 @@ class VideoSprite extends FlxSpriteGroup {
 	#if VIDEOS_ALLOWED
 	public var finishCallback:Void->Void = null;
 	public var onSkip:Void->Void = null;
+	public var startedCallback:Void->Void = null;
 
 	final _timeToSkip:Float = 1;
 	public var holdingTime:Float = 0;
@@ -47,6 +48,15 @@ class VideoSprite extends FlxSpriteGroup {
 
 		// callbacks
 		if(!shouldLoop) videoSprite.bitmap.onEndReached.add(finishVideo);
+
+		videoSprite.bitmap.onPlaying.add(function()
+		{
+			if(startedCallback != null)
+			{
+				startedCallback();
+				startedCallback = null; // чтобы не сработало повторно при loop
+			}
+		});
 
 		videoSprite.bitmap.onFormatSetup.add(function()
 		{

@@ -79,7 +79,7 @@ class MusicBeatState extends FlxState
 		stagesFunc(function(stage:BaseStage) {
 			stage.update(elapsed);
 		});
-
+    	checkMenuMusicLoop();
 		super.update(elapsed);
 	}
 
@@ -114,6 +114,18 @@ class MusicBeatState extends FlxState
 		}
 
 		if(curSection > lastSection) sectionHit();
+	}
+
+	public static function checkMenuMusicLoop():Void
+	{
+	    if (FlxG.sound.music != null && FlxG.sound.music.length > 0)
+	    {
+	        if (FlxG.sound.music.time >= FlxG.sound.music.length - 50)
+	        {
+	            FlxG.sound.music.time = 14000;
+	            FlxG.sound.music.play();
+	        }
+	    }
 	}
 
 	private function updateBeat():Void
