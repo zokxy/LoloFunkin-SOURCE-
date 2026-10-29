@@ -13,7 +13,7 @@ import flixel.util.FlxStringUtil;
 class DiscordClient
 {
 	public static var isInitialized:Bool = false;
-	private inline static final _defaultID:String = "863222024192262205";
+	private inline static final _defaultID:String = "1564609779714756821";
 	public static var clientID(default, set):String = _defaultID;
 	private static var presence:DiscordPresence = new DiscordPresence();
 	// hides this field from scripts and reflection in general
@@ -108,10 +108,15 @@ class DiscordClient
 		presence.details = details;
 		presence.smallImageKey = smallImageKey;
 		presence.largeImageKey = largeImageKey;
-		presence.largeImageText = "Engine Version: " + states.MainMenuState.psychEngineVersion;
+		presence.largeImageText = "LoloFunkin' " + states.MainMenuState.psychEngineVersion;
 		// Obtained times are in milliseconds so they are divided so Discord can use it
 		presence.startTimestamp = Std.int(startTimestamp / 1000);
 		presence.endTimestamp = Std.int(endTimestamp / 1000);
+		if (endTimestamp > 0)
+			presence.__presence.type = DiscordActivityType.DiscordActivityType_Listening;
+		else
+			presence.__presence.type = DiscordActivityType.DiscordActivityType_Playing;
+		trace('RPC: type=' + presence.__presence.type.toInt() + ' start=' + presence.startTimestamp + ' end=' + presence.endTimestamp);
 		updatePresence();
 
 		//trace('Discord RPC Updated. Arguments: $details, $state, $smallImageKey, $hasStartTimestamp, $endTimestamp, $largeImageKey');

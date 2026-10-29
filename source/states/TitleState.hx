@@ -36,12 +36,17 @@ class TitleState extends MusicBeatState
 	public static var volumeUpKeys:Array<FlxKey> = [FlxKey.NUMPADPLUS, FlxKey.PLUS];
 	public static var initialized:Bool = false;
 
+	public static inline final LOOP_START_MS:Float = 14000;
+
+	static inline final VIDEO_SYNC_INTERVAL:Float = 0.5;
+
 	var titleTextColors:Array<FlxColor> = [0xFF33FFFF, 0xFF3333CC];
 	var titleTextAlphas:Array<Float> = [1, .64];
 	var introFinished:Bool = false;
 	var bgPattern:FlxBackdrop;
 	var bgImage:FlxSprite;
 	var vigImg:FlxSprite;
+	var titleAnim:FlxSprite;
 
 	override public function create():Void
 	{
@@ -49,9 +54,7 @@ class TitleState extends MusicBeatState
 		super.create();
 		Paths.clearUnusedMemory();
 
-		musicLoopStarted = false;
-    	musicLooping = false;
-    	WindowColorMode.setDarkMode();
+		WindowColorMode.setDarkMode();
 
 		if (!initialized)
 		{
@@ -83,8 +86,8 @@ class TitleState extends MusicBeatState
 	}
 
 	var logoBl:FlxSprite;
-	var logoBumpScale:Float = 0.78;
-	var logoBaseScale:Float = 0.7;
+	var logoBumpScale:Float = 0.68;
+	var logoBaseScale:Float = 0.6;
 	var titleText:FlxSprite;
 	var swagShader:ColorSwap = null;
 
@@ -93,26 +96,65 @@ class TitleState extends MusicBeatState
 	#end
 
 	var usingIntroVideo:Bool = false;
+	var videoSyncTimer:Float = 0;
 
-	var musicLoopStarted:Bool = false;
-	var musicLooping:Bool = false;
+	public static function playMenuMusic(volume:Float = 0.7):Void
+	{
+		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
+		{
+			FlxG.sound.playMusic(Paths.music('freakyMenu'), volume);
+			FlxG.sound.music.time = LOOP_START_MS;
+		}
+
+		FlxG.sound.music.looped = true;
+		FlxG.sound.music.loopTime = LOOP_START_MS;
+		FlxG.sound.music.volume = volume;
+	}
+
+	public static function configureMusicLoop():Void
+	{
+		if (FlxG.sound.music == null) return;
+
+		FlxG.sound.music.looped = true;
+		FlxG.sound.music.loopTime = LOOP_START_MS;
+	}
+
+	function prepareIntroMusic():Void
+	{
+		FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+		configureMusicLoop();
+		FlxG.sound.music.pause();
+	}
+
+	function jumpToTitleMusic():Void
+	{
+		if (FlxG.sound.music == null)
+			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+
+		configureMusicLoop();
+		FlxG.sound.music.fadeTween?.cancel();
+		FlxG.sound.music.volume = 0.7;
+		FlxG.sound.music.time = LOOP_START_MS;
+		FlxG.sound.music.play();
+	}
+
+	function videoExists(path:String):Bool
+	{
+		#if sys
+		if (sys.FileSystem.exists(path)) return true;
+		#end
+		return Assets.exists(path);
+	}
 
 	function startIntro()
 	{
 		persistentUpdate = true;
 
-		if (FlxG.sound.music == null)
-		{
-		    FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
-		    FlxG.sound.music.looped = false;
-		    musicLooping = true;
-		}
-
 		bgImage = new FlxSprite().loadGraphic(Paths.image('lolointro'));
 		bgImage.antialiasing = ClientPrefs.data.antialiasing;
 
-		var scale:Float = Math.max(FlxG.width / bgImage.width,FlxG.height / bgImage.height);
-		bgImage.setGraphicSize(Std.int(bgImage.width * scale),Std.int(bgImage.height * scale));
+		var scale:Float = Math.max(FlxG.width / bgImage.width, FlxG.height / bgImage.height);
+		bgImage.setGraphicSize(Std.int(bgImage.width * scale), Std.int(bgImage.height * scale));
 
 		bgImage.updateHitbox();
 		bgImage.screenCenter();
@@ -124,19 +166,26 @@ class TitleState extends MusicBeatState
 		vigImg = new FlxSprite().loadGraphic(Paths.image('vig'));
 		vigImg.antialiasing = ClientPrefs.data.antialiasing;
 
-		var scaleVig:Float = Math.max(FlxG.width / vigImg.width,FlxG.height / vigImg.height);
-		vigImg.setGraphicSize(Std.int(vigImg.width * scaleVig),Std.int(vigImg.height * scaleVig));
-				vigImg.alpha = 0.5;
+		var scaleVig:Float = Math.max(FlxG.width / vigImg.width, FlxG.height / vigImg.height);
+		vigImg.setGraphicSize(Std.int(vigImg.width * scaleVig), Std.int(vigImg.height * scaleVig));
+		vigImg.alpha = 0.5;
 
 		vigImg.updateHitbox();
 		vigImg.screenCenter();
 
+		titleAnim = new FlxSprite(350, -100);
+		titleAnim.frames = Paths.getSparrowAtlas('Lo');
+		titleAnim.animation.addByPrefix('idle', 'idle', 16, true);
+		titleAnim.animation.play('idle');
+		titleAnim.antialiasing = ClientPrefs.data.antialiasing;
+		titleAnim.setGraphicSize(titleAnim.width / 1.3, titleAnim.height / 1.3);
+		titleAnim.updateHitbox();
 
 		logoBl = new FlxSprite(logoPosition.x, logoPosition.y);
 		logoBl.loadGraphic(Paths.image('logoBumpin'));
 		logoBl.antialiasing = ClientPrefs.data.antialiasing;
-		logoBaseScale = 0.7;
-		logoBumpScale = 0.78;
+		logoBaseScale = 0.6;
+		logoBumpScale = 0.68;
 		logoBl.scale.set(logoBaseScale, logoBaseScale);
 		logoBl.updateHitbox();
 
@@ -146,14 +195,12 @@ class TitleState extends MusicBeatState
 			logoBl.shader = swagShader.shader;
 		}
 
-		FlxTween.tween(logoBl, {x: logoPosition.x + 12}, 1.6, {
-			ease: FlxEase.sineInOut,
-			type: FlxTween.PINGPONG
-		});
+		FlxTween.tween(logoBl, {x: logoPosition.x + 12}, 1.6, {ease: FlxEase.sineInOut, type: FlxTween.PINGPONG});
 
 		var animFrames:Array<FlxFrame> = [];
 		titleText = new FlxSprite(enterPosition.x, enterPosition.y);
 		titleText.frames = Paths.getSparrowAtlas('titleEnter');
+		titleText.setGraphicSize(titleText.width / 1.3, titleText.height / 1.3);
 
 		@:privateAccess
 		{
@@ -164,11 +211,7 @@ class TitleState extends MusicBeatState
 		if (newTitle = animFrames.length > 0)
 		{
 			titleText.animation.addByPrefix('idle', "ENTER IDLE", 24);
-			titleText.animation.addByPrefix(
-				'press',
-				ClientPrefs.data.flashing ? "ENTER PRESSED" : "ENTER FREEZE",
-				24
-			);
+			titleText.animation.addByPrefix('press', ClientPrefs.data.flashing ? "ENTER PRESSED" : "ENTER FREEZE", 24);
 		}
 		else
 		{
@@ -186,14 +229,15 @@ class TitleState extends MusicBeatState
 
 		add(bgPattern);
 		add(vigImg);
+		add(titleAnim);
 		add(logoBl);
 		add(titleText);
 
 		if (initialized)
 		{
 			skippedIntro = true;
-		    introFinished = true;
-		    musicLooping = true;
+			introFinished = true;
+			playMenuMusic(0.7);
 		}
 		else
 		{
@@ -207,55 +251,79 @@ class TitleState extends MusicBeatState
 		#if VIDEOS_ALLOWED
 		var videoPath:String = Paths.video('introTitle');
 
-		if (Assets.exists(videoPath))
+		if (videoExists(videoPath))
 		{
-			usingIntroVideo = true;
-			introVideo = new VideoSprite(videoPath, false, true, false);
-			introVideo.finishCallback = onIntroVideoFinished;
-			introVideo.onSkip = onIntroVideoFinished;
-			introVideo.startedCallback = onIntroVideoStarted;
-			add(introVideo);
-			introVideo.play();
-			return;
+
+			prepareIntroMusic();
+
+			introVideo = new VideoSprite(videoPath, false, false, false);
+
+			if (introVideo.loaded)
+			{
+				usingIntroVideo = true;
+				introVideo.finishCallback = function() {
+					onIntroVideoFinished(false);
+				};
+				introVideo.startedCallback = onIntroVideoStarted;
+				add(introVideo);
+
+				if (introVideo.play())
+					return;
+
+				usingIntroVideo = false;
+				FlxG.log.warn('[TitleState] Intro video failed to play: ' + videoPath);
+			}
+			else
+				FlxG.log.warn('[TitleState] Intro video failed to load: ' + videoPath);
+
+			introVideo.finishCallback = null;
+			introVideo.startedCallback = null;
+			remove(introVideo, true);
+			introVideo.destroy();
+			introVideo = null;
 		}
 		else
 			FlxG.log.warn('[TitleState] Intro video not found: ' + videoPath);
 		#end
 
-		if (FlxG.sound.music != null)
-			FlxG.sound.music.fadeIn(4, 0, 0.7);
-
-		skipIntro();
+		skipIntro(true);
 	}
 
 	function onIntroVideoStarted():Void
 	{
-		if (FlxG.sound.music != null)
-		{
-			#if hxvlc
-			var videoTimeMs:Float = haxe.Int64.toInt(introVideo.videoSprite.bitmap.time);
-			FlxG.sound.music.time = videoTimeMs;
-			#end
+		if (!usingIntroVideo || skippedIntro) return;
 
-			FlxG.sound.music.play();
-			FlxG.sound.music.fadeIn(4, 0, 0.7);
-			musicLooping = true;
+		if (FlxG.sound.music == null)
+		{
+			prepareIntroMusic();
 		}
+
+		FlxG.sound.music.volume = 0;
+		FlxG.sound.music.time = 0;
+		FlxG.sound.music.play();
+		FlxG.sound.music.fadeIn(4, 0, 0.7);
+
+		videoSyncTimer = VIDEO_SYNC_INTERVAL;
 	}
 
-	function onIntroVideoFinished():Void
+	function onIntroVideoFinished(wasSkipped:Bool = false):Void
 	{
 		#if VIDEOS_ALLOWED
 		usingIntroVideo = false;
 
 		if (introVideo != null)
 		{
-			remove(introVideo);
+			introVideo.finishCallback = null;
+			introVideo.startedCallback = null;
+			if (introVideo.videoSprite != null)
+				introVideo.videoSprite.stop();
+			remove(introVideo, true);
+			introVideo.destroy();
 			introVideo = null;
 		}
 		#end
 
-		skipIntro();
+		skipIntro(wasSkipped);
 	}
 
 	var logoPosition:FlxPoint = FlxPoint.get(-150, -100);
@@ -305,21 +373,25 @@ class TitleState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-	    if (FlxG.sound.music != null)
-	    {
-	        Conductor.songPosition = FlxG.sound.music.time;
+		if (FlxG.sound.music != null)
+		{
+			Conductor.songPosition = FlxG.sound.music.time;
 
-	        if (musicLooping && FlxG.sound.music.length > 0)
-	        {
-	            if (FlxG.sound.music.time >= FlxG.sound.music.length - 50)
-	            {
-	                FlxG.sound.music.time = 14000;
-	                FlxG.sound.music.play();
-	            }
-	        }
-	    }
+			#if VIDEOS_ALLOWED
 
-	    var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
+			if (usingIntroVideo && introVideo != null && FlxG.sound.music.playing)
+			{
+				videoSyncTimer -= elapsed;
+				if (videoSyncTimer <= 0)
+				{
+					videoSyncTimer = VIDEO_SYNC_INTERVAL;
+					introVideo.syncTo(FlxG.sound.music.time);
+				}
+			}
+			#end
+		}
+
+		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
 
 		#if mobile
 		for (touch in FlxG.touches.list)
@@ -360,26 +432,30 @@ class TitleState extends MusicBeatState
 
 				timer = FlxEase.quadInOut(timer);
 
-				titleText.color = FlxColor.interpolate(
-					titleTextColors[0],
-					titleTextColors[1],
-					timer
-				);
+				if (titleText != null)
+				{
+					titleText.color = FlxColor.interpolate(
+						titleTextColors[0],
+						titleTextColors[1],
+						timer
+					);
 
-				titleText.alpha = FlxMath.lerp(
-					titleTextAlphas[0],
-					titleTextAlphas[1],
-					timer
-				);
+					titleText.alpha = FlxMath.lerp(
+						titleTextAlphas[0],
+						titleTextAlphas[1],
+						timer
+					);
+				}
 			}
 
 			if (pressedEnter)
 			{
-				titleText.color = FlxColor.WHITE;
-				titleText.alpha = 1;
-
 				if (titleText != null)
+				{
+					titleText.color = FlxColor.WHITE;
+					titleText.alpha = 1;
 					titleText.animation.play('press');
+				}
 
 				FlxG.camera.flash(
 					ClientPrefs.data.flashing ? FlxColor.WHITE : 0x4CFFFFFF,
@@ -396,10 +472,16 @@ class TitleState extends MusicBeatState
 				});
 			}
 		}
-
-		if (initialized && pressedEnter && !skippedIntro)
+		else if (initialized && pressedEnter && !skippedIntro)
 		{
+			#if VIDEOS_ALLOWED
+			if (usingIntroVideo)
+				onIntroVideoFinished(true);
+			else
+				skipIntro(true);
+			#else
 			skipIntro(true);
+			#end
 		}
 
 		if (swagShader != null)
@@ -416,12 +498,20 @@ class TitleState extends MusicBeatState
 
 	override function destroy():Void
 	{
-	    if (logoBl != null)
-	    {
-	        FlxTween.cancelTweensOf(logoBl);
-	        FlxTween.cancelTweensOf(logoBl.scale);
-	    }
-	    super.destroy();
+		#if VIDEOS_ALLOWED
+		if (introVideo != null)
+		{
+			introVideo.finishCallback = null;
+			introVideo.startedCallback = null;
+		}
+		#end
+
+		if (logoBl != null)
+		{
+			FlxTween.cancelTweensOf(logoBl);
+			FlxTween.cancelTweensOf(logoBl.scale);
+		}
+		super.destroy();
 	}
 
 	public static var closedState:Bool = false;
@@ -432,8 +522,8 @@ class TitleState extends MusicBeatState
 
 		if (logoBl != null)
 		{
+
 			logoBl.scale.set(logoBumpScale, logoBumpScale);
-			logoBl.updateHitbox();
 			FlxTween.cancelTweensOf(logoBl.scale);
 
 			FlxTween.tween(logoBl.scale, {
@@ -451,29 +541,15 @@ class TitleState extends MusicBeatState
 	{
 		if (!skippedIntro)
 		{
+			skippedIntro = true;
 			introFinished = true;
 
 			if (fromButton)
-			{
-				#if VIDEOS_ALLOWED
-				if (introVideo != null)
-				{
-					remove(introVideo);
-					introVideo = null;
-					usingIntroVideo = false;
-				}
-				#end
-
-				if (FlxG.sound.music != null)
-				{
-					FlxG.sound.music.time = 14000;
-					FlxG.sound.music.play();
-					musicLooping = true;
-				}
-			}
+				jumpToTitleMusic();
+			else
+				configureMusicLoop();
 
 			FlxG.camera.flash(FlxColor.WHITE, 4);
-			skippedIntro = true;
 		}
 	}
 }

@@ -328,6 +328,8 @@ class PauseSubState extends MusicBeatSubstate
 						MusicBeatState.switchState(new states.FreeplayState());
 
 					FlxG.sound.playMusic(Paths.music('freakyMenu'));
+					FlxG.sound.music.time = states.TitleState.LOOP_START_MS;
+					FlxG.sound.music.loopTime = states.TitleState.LOOP_START_MS;
 					PlayState.changedDifficulty = false;
 					PlayState.chartingMode = false;
 					FlxG.camera.followLerp = 0;

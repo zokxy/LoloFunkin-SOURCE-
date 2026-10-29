@@ -1592,7 +1592,7 @@ class PlayState extends MusicBeatState
 
 			paused = false;
 			callOnScripts('onResume');
-			resetRPC(startTimer != null && startTimer.finished);
+			resetRPC(Conductor.songPosition > 0.0);
 		}
 	}
 
@@ -2365,6 +2365,7 @@ class PlayState extends MusicBeatState
 
 	public function finishSong(?ignoreNoteOffset:Bool = false):Void
 	{
+		trace('finishSong');
 		updateTime = false;
 		FlxG.sound.music.volume = 0;
 
@@ -2386,6 +2387,7 @@ class PlayState extends MusicBeatState
 	public var transitioning = false;
 	public function endSong()
 	{
+		trace('endSong');
 		//Should kill you if you tried to cheat
 		if(!startingSong)
 		{
@@ -2422,6 +2424,7 @@ class PlayState extends MusicBeatState
 		#end
 
 		var ret:Dynamic = callOnScripts('onEndSong', null, true);
+		trace('onEndSong ret=' + ret + ' transitioning=' + transitioning);
 		if(ret != LuaUtils.Function_Stop && !transitioning)
 		{
 			#if !switch
@@ -2448,6 +2451,8 @@ class PlayState extends MusicBeatState
 				{
 					Mods.loadTopMod();
 					FlxG.sound.playMusic(Paths.music('freakyMenu'));
+					FlxG.sound.music.time = states.TitleState.LOOP_START_MS;
+					FlxG.sound.music.loopTime = states.TitleState.LOOP_START_MS;
 					#if DISCORD_ALLOWED
 					DiscordClient.resetClientID();
 					#end
@@ -2499,6 +2504,8 @@ class PlayState extends MusicBeatState
 				canResync = false;
 				MusicBeatState.switchState(new FreeplayState());
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+				FlxG.sound.music.time = states.TitleState.LOOP_START_MS;
+				FlxG.sound.music.loopTime = states.TitleState.LOOP_START_MS;
 				changedDifficulty = false;
 			}
 			transitioning = true;

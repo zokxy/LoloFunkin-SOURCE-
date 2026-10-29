@@ -53,6 +53,11 @@ class MusicBeatState extends FlxState
 	public static var timePassedOnState:Float = 0;
 	override function update(elapsed:Float)
 	{
+		if (FlxG.sound.music != null && !(FlxG.state is states.PlayState) && !(FlxG.state is states.FreeplayState))
+		{
+			FlxG.sound.music.looped = true;
+			FlxG.sound.music.loopTime = 14000;
+		}
 		//everyStep();
 		var oldStep:Int = curStep;
 		timePassedOnState += elapsed;
@@ -118,14 +123,20 @@ class MusicBeatState extends FlxState
 
 	public static function checkMenuMusicLoop():Void
 	{
-	    if (FlxG.sound.music != null && FlxG.sound.music.length > 0)
-	    {
-	        if (FlxG.sound.music.time >= FlxG.sound.music.length - 50)
-	        {
-	            FlxG.sound.music.time = 14000;
-	            FlxG.sound.music.play();
-	        }
-	    }
+		if (Std.isOfType(FlxG.state, PlayState) || Std.isOfType(FlxG.state, states.editors.ChartingState))
+			return;
+
+		if (FlxG.sound.music != null && FlxG.sound.music.length > 0)
+		{
+			if (FlxG.sound.music.looped)
+				return;
+
+			if (FlxG.sound.music.playing && FlxG.sound.music.time >= FlxG.sound.music.length - 50)
+			{
+				FlxG.sound.music.time = 14000;
+				FlxG.sound.music.play();
+			}
+		}
 	}
 
 	private function updateBeat():Void

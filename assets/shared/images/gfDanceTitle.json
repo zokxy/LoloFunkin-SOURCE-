@@ -1,7 +1,7 @@
 {	
-	"titlex": 100,
-	"titley": 110,
-	"startx": 150,
-	"starty": 600,
+	"titlex": -50,
+	"titley": 75,
+	"startx": 32,
+	"starty": 500,
 	"bpm": 130,
 }

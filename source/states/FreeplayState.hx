@@ -47,35 +47,26 @@ class FreeplayState extends MusicBeatState
 
 	var player:MusicPlayer;
 
-	// ==== РАДИО-ТЮНЕР ====
 	var radioBg:FlxSprite;
 	var needle:FlxSprite;
 	var curIcon:HealthIcon;
 	var songNameText:FlxText;
 
 	var stationFreqs:Array<Float> = [];
-	var needlePos:Float = 0; // 0..1 по шкале
-	var tunedIndex:Int = -1; // -1 = сигнала нет
+	var needlePos:Float = 0;
+	var tunedIndex:Int = -1;
 
-	// Координаты по скетчу radio.png (холст 1280x720, риски-шкала внутри
-	// правого окошка "ТЮНЕР"). Поправь под финальный ассет, когда он будет.
 	var scaleMinX:Float = 650;
 	var scaleMaxX:Float = 880;
 	var scaleY:Float = 400;
 
-	// иконка персонажа и название песни рисуются НЕ в окошке (там тесно и
-	// уже есть подписи/стрелки-хинты), а под всем корпусом радио, на "столе"
 	var iconY:Float = 560;
 	var nameTextY:Float = 640;
 
-	var tuneSpeed:Float = 0.5; // ед. шкалы (0..1) / сек
-	var tuneTolerance:Float = 0.025; // допуск попадания в станцию
+	var tuneSpeed:Float = 0.5;
+	var tuneTolerance:Float = 0.025;
 
-	// Если в radio.png метки на фиксированных x — впиши сюда значения 0..1 по одной
-	// на каждую песню (в порядке добавления в songs). Если length не совпадёт
-	// с кол-вом песен, будет равномерное распределение.
 	var manualStationPositions:Array<Float> = [];
-	// =======================
 
 	override function create()
 	{
@@ -123,7 +114,6 @@ class FreeplayState extends MusicBeatState
 
 		WeekData.setDirectoryFromWeek();
 
-		// шкала радио поверх задника
 		radioBg = new FlxSprite().loadGraphic(Paths.image('freeplayState/radio'));
 		radioBg.antialiasing = ClientPrefs.data.antialiasing;
 		add(radioBg);
@@ -131,7 +121,7 @@ class FreeplayState extends MusicBeatState
 
 		computeStationFreqs();
 
-		needle = new FlxSprite().makeGraphic(3, 40, FlxColor.RED); // ЗАГЛУШКА — замени на свой спрайт
+		needle = new FlxSprite().makeGraphic(3, 40, FlxColor.RED);
 		needle.y = scaleY - needle.height / 2;
 		add(needle);
 
@@ -174,7 +164,7 @@ class FreeplayState extends MusicBeatState
 		bottomBG.alpha = 0.6;
 		add(bottomBG);
 
-		var leText:String = Language.getPhrase("freeplay_tip", "Крути LEFT/RIGHT чтобы поймать станцию / UP-DOWN сложность / SPACE превью / ENTER играть.");
+		var leText:String = Language.getPhrase("freeplay_tip", "empty");
 		bottomString = leText;
 		var size:Int = 16;
 		bottomText = new FlxText(bottomBG.x, bottomBG.y + 4, FlxG.width, leText, size);
@@ -210,7 +200,7 @@ class FreeplayState extends MusicBeatState
 	var instPlaying:Int = -1;
 	public static var vocals:FlxSound = null;
 	public static var opponentVocals:FlxSound = null;
-	var holdTime:Float = 0; // используется MusicPlayer.hx для перемотки трека
+	var holdTime:Float = 0;
 
 	var stopMusicPlay:Bool = false;
 	override function update(elapsed:Float)
@@ -268,6 +258,8 @@ class FreeplayState extends MusicBeatState
 				player.switchPlayMusic();
 
 				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+				FlxG.sound.music.time = states.TitleState.LOOP_START_MS;
+				FlxG.sound.music.loopTime = states.TitleState.LOOP_START_MS;
 				FlxTween.tween(FlxG.sound.music, {volume: 1}, 1);
 			}
 			else
@@ -343,6 +335,9 @@ class FreeplayState extends MusicBeatState
 
 				FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 0.8);
 				FlxG.sound.music.pause();
+				FlxG.sound.music.loopTime = 0;
+				if (vocals != null) vocals.loopTime = 0;
+				if (opponentVocals != null) opponentVocals.loopTime = 0;
 				instPlaying = curSelected;
 
 				player.playingMusic = true;
@@ -384,7 +379,16 @@ class FreeplayState extends MusicBeatState
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 
 				updateTexts(elapsed);
+				if (FlxG.sound.music != null)
+				{
+					FlxG.sound.music.looped = true;
+					FlxG.sound.music.loopTime = (player != null && player.playingMusic) ? 0 : 14000;
+				}
 				super.update(elapsed);
+				if (FlxG.sound.music != null)
+				{
+					FlxG.sound.music.loopTime = (player != null && player.playingMusic) ? 0 : 14000;
+				}
 				return;
 			}
 
@@ -414,8 +418,6 @@ class FreeplayState extends MusicBeatState
 		updateTexts(elapsed);
 		super.update(elapsed);
 	}
-
-	// ==== логика тюнера ====
 
 	function computeStationFreqs()
 	{
@@ -517,8 +519,6 @@ class FreeplayState extends MusicBeatState
 		add(curIcon);
 	}
 
-	// =========================
-
 	function getVocalFromCharacter(char:String)
 	{
 		try
@@ -580,7 +580,7 @@ class FreeplayState extends MusicBeatState
 
 	public function updateTexts(elapsed:Float = 0.0)
 	{
-		// список песен больше не рисуем — шкала радио сама показывает состояние
+
 	}
 
 	override function destroy():Void
@@ -589,7 +589,11 @@ class FreeplayState extends MusicBeatState
 
 		FlxG.autoPause = ClientPrefs.data.autoPause;
 		if (!FlxG.sound.music.playing && !stopMusicPlay)
+		{
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			FlxG.sound.music.time = states.TitleState.LOOP_START_MS;
+			FlxG.sound.music.loopTime = states.TitleState.LOOP_START_MS;
+		}
 	}
 }
 

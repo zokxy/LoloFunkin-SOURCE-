@@ -32,7 +32,7 @@ class CreditsState extends MusicBeatState
 	var myBoardList:Array<Array<String>> = [
 		["Marlikov",   "mydev1",  "Director, Voice actor, Sound designer", "https://x.com",      "444444"],
 		["Abra",       "mydev2",  "Director, Musician", "https://x.com",      "14967B"],
-		["zokx",       "mydev3",  "Coder, ogurchik", "https://x.com",      "3E813A"],
+		["zokx",       "mydev3",  "Coder", "https://x.com",      "3E813A"],
 		["dizzer",     "mydev4",  "Artist", "https://x.com",      "9E29CF"],
 		["x-frask",    "mydev5",  "3D Animator", "https://x.com",      "64A250"],
 		["!v1kruins!", "mydev6",  "Artist", "https://x.com",      "FFBD40"],

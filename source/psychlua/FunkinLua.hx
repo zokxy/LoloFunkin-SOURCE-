@@ -759,6 +759,8 @@ class FunkinLua {
 			#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
 
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			FlxG.sound.music.time = states.TitleState.LOOP_START_MS;
+			FlxG.sound.music.loopTime = states.TitleState.LOOP_START_MS;
 			PlayState.changedDifficulty = false;
 			PlayState.chartingMode = false;
 			game.transitioning = true;

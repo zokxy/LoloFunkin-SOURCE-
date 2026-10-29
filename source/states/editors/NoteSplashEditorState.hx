@@ -591,9 +591,16 @@ class NoteSplashEditorState extends MusicBeatState
         if (!blockInput)
         {
             if (controls.BACK)
+            {
                 MusicBeatState.switchState(new MasterEditorMenu());
-                FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
-                FlxG.sound.music.time = 14000;
+                if (FlxG.sound.music == null || !FlxG.sound.music.playing)
+                {
+                    FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+                    FlxG.sound.music.time = 14000;
+                }
+                FlxG.sound.music.looped = true;
+                FlxG.sound.music.loopTime = 14000;
+            }
             if (FlxG.keys.justPressed.F1)
                 openSubState(new NoteSplashEditorHelpSubState());
         }
