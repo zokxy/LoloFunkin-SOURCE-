@@ -492,8 +492,8 @@ class Note extends FlxSprite
 
 		if (tooLate && !inEditor)
 		{
-			if (alpha > 0.3)
-				alpha = 0.3;
+		    if (alpha > 1.0)
+		        alpha = 1.0;
 		}
 	}
 
